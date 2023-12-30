@@ -41,8 +41,8 @@ print("GET BASINS")
 # https://data.hydrosheds.org/file/HydroBASINS/standard/hybas_sa_lev03_v1c.zip
 
 get_basins <- function() {
-  url <- "https://data.hydrosheds.org/file/HydroBASINS/standard/hybas_na_lev03_v1c.zip"
-  file_name <- "hybas_na_lev03_v1c.zip"
+  url <- "https://data.hydrosheds.org/file/HydroBASINS/standard/hybas_sa_lev03_v1c.zip"
+  file_name <- "hybas_sa_lev03_v1c.zip"
   
   download.file(
     url = url,
@@ -66,20 +66,20 @@ load_basins <- function() {
     full.names = TRUE
   )
   print(filenames)
-  namerica_basin <- sf::st_read(
+  samerica_basin <- sf::st_read(
     filenames
   )
   
   return(namerica_basin)
 }
 
-namerica_basin <- load_basins()
+samerica_basin <- load_basins()
 print("basin loaded")
 
 print("Intersect Basin with only the wanted Country Boundary.")
 sf::sf_use_s2(F)
 
-brazil_basin <- namerica_basin |>
+colombia_basin <- samerica_basin |>
   sf::st_intersection(
     country_borders
   ) |>
@@ -87,14 +87,20 @@ brazil_basin <- namerica_basin |>
     HYBAS_ID
   )
 
+# Check basins
+
+colombia_basin %>% 
+  ggplot() +
+  geom_sf()
+
 # 3. GET RIVERS DATA
 #-------------------
 print("Get Rivers")
 # https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_sa_shp.zip
 
 get_rivers <- function() {
-  url <- "https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_na_shp.zip"
-  file_name <- "na-rivers.zip"
+  url <- "https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_sa_shp.zip"
+  file_name <- "sa-rivers.zip"
   
   download.file(
     url = url,
@@ -111,21 +117,21 @@ list.files()
 
 load_rivers <- function() {
   filenames <- list.files(
-    path = "HydroRIVERS_v10_na_shp",
+    path = "HydroRIVERS_v10_sa_shp", #Now we look for the folder name
     pattern = ".shp$",
     full.names = T
   )
   print(filenames)
-  namerica_rivers <- sf::st_read(
+  samerica_rivers <- sf::st_read(
     filenames
   )
   
-  return(namerica_rivers)
+  return(samerica_rivers)
 }
 
-namerica_rivers <- load_rivers()
+samerica_rivers <- load_rivers()
 
-brazil_rivers <- namerica_rivers |>
+colombia_rivers <- samerica_rivers |>
   dplyr::select(
     ORD_FLOW
   ) |>
@@ -136,48 +142,58 @@ brazil_rivers <- namerica_rivers |>
 # 4. DETERMINE BASIN FOR EVERY RIVER
 #-----------------------------------
 
-brazil_river_basin <- sf::st_intersection(
-  brazil_rivers,
-  brazil_basin
+colombia_river_basin <- sf::st_intersection(
+  colombia_rivers,
+  colombia_basin
 )
 
+# colombia_river_basin %>% 
+#   ggplot() +
+#   geom_sf()
+
 # 5. RIVER WIDTH
+
+# Here we map every order of a river to a specified width, for the 
+#visualization to work
+
 #---------------
 
-unique(brazil_river_basin$ORD_FLOW)
+unique(colombia_river_basin$ORD_FLOW)
 
-brazil_river_basin_width <- brazil_river_basin |>
+colombia_river_basin_width <- colombia_river_basin |>
   dplyr::mutate(
     width = as.numeric(
       ORD_FLOW
     ),
     width = dplyr::case_when(
-      width == 1 ~ .8,
+      # width == 1 ~ .8,
       width == 2 ~ .7,
       width == 3 ~ .6,
       width == 4 ~ .45,
       width == 5 ~ .35,
       width == 6 ~ .25,
       width == 7 ~ .2,
-      width == 8 ~ .15,
-      width == 9 ~ .1,
+      width == 8 ~ .1,
+      # width == 9 ~ .1,
       TRUE ~ 0
     )
   ) |>
   sf::st_as_sf()
 
+
+
 # 6. PLOT
 #--------
 
 unique(
-  brazil_river_basin_width$HYBAS_ID
+  colombia_river_basin_width$HYBAS_ID
 )
 
 hcl.pals("qualitative")
 
 p <- ggplot() +
   geom_sf(
-    data = brazil_river_basin_width,
+    data = colombia_river_basin_width,
     aes(
       color = factor(
         HYBAS_ID
@@ -189,7 +205,7 @@ p <- ggplot() +
   scale_color_manual(
     name = "",
     values = hcl.colors(
-      17, "Dark 3",
+      6, "Dark 3",
       alpha = 1
     )
   ) +
@@ -230,9 +246,9 @@ p <- ggplot() +
   )
 
 ggsave(
-  filename = "us-river-basins.png",
+  filename = "colombia-river-basins.png",
   width = 7, height = 7.75, dpi = 600,
   bg = "white", device = "png", p
 )
 
-st_write(brazil_river_basin_width, "us-river-basins.geojson", layer = NULL, driver = "GeoJson")
+st_write(colombia_river_basin_width, "colombia-river-basins.geojson", layer = NULL, driver = "GeoJson")
