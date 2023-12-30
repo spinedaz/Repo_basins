@@ -1,3 +1,4 @@
+library(usethis)
 
 libs <- c(
   "tidyverse", "sf",
@@ -251,4 +252,5 @@ ggsave(
   bg = "white", device = "png", p
 )
 
-st_write(colombia_river_basin_width, "colombia-river-basins.geojson", layer = NULL, driver = "GeoJson")
+# st_write(colombia_river_basin_width, "colombia-river-basins.geojson", layer = NULL, driver = "GeoJson")
+
