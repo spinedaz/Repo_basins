@@ -4,4 +4,4 @@ This repo is based on the one Created by Milo Popovic (https://github.com/milos-
 
 The final figure:
 
-[](https://github.com/spinedaz/Repo_basins/blob/main/colombia-river-basins.png)
+![alt text](https://github.com/spinedaz/Repo_basins/blob/main/colombia-river-basins.png?raw=true)
